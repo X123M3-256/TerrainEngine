@@ -150,6 +150,15 @@ int i,row,column;
 return result;
 }
 
+Matrix TranslationMatrix(Vector displacement)
+{
+Matrix matrix=MatrixIdentity();
+matrix.Data[12]-=displacement.X;
+matrix.Data[13]-=displacement.Y;
+matrix.Data[14]-=displacement.Z;
+return matrix;
+}
+
 Matrix ProjectionMatrix(float left,float right,float bottom,float top,float near,float far)
 {
 Matrix matrix;
