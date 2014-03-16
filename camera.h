@@ -12,13 +12,8 @@ Camera CreateCamera();
 void PitchCamera(Camera* Cam,float Angle);
 void RollCamera(Camera* Cam,float Angle);
 void YawCamera(Camera* Cam,float Angle);
-
-
 void TranslateCamera(Camera* Cam,Vector Translation);
 
-void SetModelViewFromCamera(Camera* Cam);
-
-void RenderWithCamera(Camera* Cam,void(*Render)());
-void RenderWithCameraStereoscopic(Camera* Cam,void(*Render)());
+Matrix MatrixFromCamera(Camera* camera);
 
 #endif // CAMERA_H_INCLUDED

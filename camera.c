@@ -50,59 +50,16 @@ Translation=QuaternionTransformVector(Cam->Rotation,Translation);
 Cam->Position=VectorAdd(Cam->Position,Translation);
 }
 
-
-void SetModelViewFromCamera(Camera* Cam)
+Matrix MatrixFromCamera(Camera* camera)
 {
-glMatrixMode(GL_MODELVIEW);
-Matrix RotationMatrix=MatrixFromQuaternion(Cam->Rotation);
-glLoadMatrixf(RotationMatrix.Data);
-glTranslatef(-Cam->Position.X,-Cam->Position.Y,-Cam->Position.Z);
+Matrix rotation=MatrixFromQuaternion(camera->Rotation);
+
+Matrix matrix=MatrixIdentity();
+matrix.Data[12]-=camera->Position.X;
+matrix.Data[13]-=camera->Position.Y;
+matrix.Data[14]-=camera->Position.Z;
+matrix=MatrixMultiply(rotation,matrix);
+
+return matrix;
 }
 
-void RenderWithCamera(Camera* Cam,void(*Render)())
-{
-glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-glMatrixMode(GL_MODELVIEW);
-Matrix RotationMatrix=MatrixFromQuaternion(Cam->Rotation);
-glLoadMatrixf(RotationMatrix.Data);
-glTranslatef(-Cam->Position.X,-Cam->Position.Y,-Cam->Position.Z);
-Render();
-glFinish();
-SDL_GL_SwapBuffers();
-}
-//This had to be done
-void RenderWithCameraStereoscopic(Camera* Cam,void(*Render)())
-{
-Vector StereoBase;
-StereoBase.X=1;
-StereoBase.Y=0;
-StereoBase.Z=0;
-StereoBase=QuaternionTransformVector(Cam->Rotation,StereoBase);
-
-StereoBase.X*=0.25;
-StereoBase.Y*=0.25;
-StereoBase.Z*=0.25;
-
-glMatrixMode(GL_MODELVIEW);
-Matrix RotationMatrix=MatrixFromQuaternion(Cam->Rotation);
-glLoadMatrixf(RotationMatrix.Data);
-glTranslatef(-Cam->Position.X,-Cam->Position.Y,-Cam->Position.Z);
-glPushMatrix();
-
-glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);
-glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-//Render left eye image
-glColorMask(GL_TRUE,GL_FALSE,GL_FALSE,GL_FALSE);
-glTranslatef(StereoBase.X,StereoBase.Y,StereoBase.Z);
-Render();
-
-glClear(GL_DEPTH_BUFFER_BIT);
-//Render right eye image
-glPopMatrix();
-glColorMask(GL_FALSE,GL_TRUE,GL_TRUE,GL_FALSE);
-glTranslatef(-StereoBase.X,-StereoBase.Y,-StereoBase.Z);
-Render();
-
-glFinish();
-SDL_GL_SwapBuffers();
-}
