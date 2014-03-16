@@ -1,7 +1,10 @@
 #version 130
+uniform mat4 modelViewProjection;
+uniform float scale;
+uniform vec2 displacement;
 
 varying float altitude;
-varying vec3 normal;
+varying float lambert;
 
 
 //My simplex noise
@@ -107,17 +110,23 @@ return 100.0*maxvalue*result;
 
 void main()
 {
-vec4 noisyPosition=gl_Vertex;
+//Transform the vertex into world space
+vec4 worldSpacePosition=vec4(scale*gl_Vertex.xyz,1.0);
+worldSpacePosition.xz+=displacement;
 
+vec4 displacedPosition=worldSpacePosition;
+//Add simplex noise
 vec2 gradient=vec2(0.0,0.0);
+displacedPosition.y+=SimplexNoise(worldSpacePosition.xz,128.0,16.0,gradient);
+displacedPosition.y+=SimplexNoise(worldSpacePosition.xz,64.0,8.0,gradient);
+displacedPosition.y+=SimplexNoise(worldSpacePosition.xz,32.0,2.0,gradient);
+displacedPosition.y+=SimplexNoise(worldSpacePosition.xz,16.0,1.0,gradient);
+displacedPosition.y+=SimplexNoise(worldSpacePosition.xz,8.0,0.5,gradient);
+displacedPosition.y+=SimplexNoise(worldSpacePosition.xz,4.0,0.25,gradient);
 
-noisyPosition.y+=SimplexNoise(gl_Vertex.xz,128.0,16.0,gradient);
-noisyPosition.y+=SimplexNoise(gl_Vertex.xz,64.0,8.0,gradient);
-noisyPosition.y+=SimplexNoise(gl_Vertex.xz,32.0,2.0,gradient);
-noisyPosition.y+=SimplexNoise(gl_Vertex.xz,16.0,1.0,gradient);
-noisyPosition.y+=SimplexNoise(gl_Vertex.xz,8.0,0.5,gradient);
-noisyPosition.y+=SimplexNoise(gl_Vertex.xz,4.0,0.25,gradient);
+vec3 normal=normalize(vec3(-gradient.x,1.0,-gradient.y));
 
-normal=normalize(vec3(-gradient.x,1.0,-gradient.y));
-gl_Position=gl_ModelViewProjectionMatrix*noisyPosition;
+lambert=clamp(dot(normal,vec3(0.0,0.866,0.5)),0.0,1.0);
+
+gl_Position=modelViewProjection*displacedPosition;
 }

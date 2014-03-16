@@ -22,36 +22,20 @@ unsigned char roughness;
 
 typedef struct
 {
-//This is *not* the coordinates of the patch but indices into the height map
-int x,y;
-//The coordinates of the midpoint of this terrain patch (Simple average of the four corners)
-Vector midPoint;
-//The level of detail that this terrain patch is currently rendering at
-char detail;
-//Client side copy of the terrain vertices. Allows editing without regenerating the entire patch.
-Vertex* vertices;
-int numVertices;
-//Handle for the VBO
-int VBO;
-}TerrainPatch;
-
-typedef struct
-{
 int width;
 int height;
 TerrainPoint** heightMap;
-TerrainPatch** patches;
 }Terrain;
 
 
 void InitialiseTerrainSystem();
 
-void FinishTerrainSystem(Terrain* terrain);
+void FinishTerrainSystem();
 
 Terrain CreateTerrain(int width,int height);
 
 //Rendering code
-void RenderTerrain(Camera* camera,Terrain* terrain);
+void RenderTerrain(Terrain* terrain,Matrix modelViewProjection);
 
 
 
