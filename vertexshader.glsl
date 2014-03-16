@@ -1,7 +1,7 @@
 #version 130
 
 varying float altitude;
-varying float radiance;
+varying vec3 normal;
 
 
 //My simplex noise
@@ -111,29 +111,13 @@ vec4 noisyPosition=gl_Vertex;
 
 vec2 gradient=vec2(0.0,0.0);
 
-
-//float size=100.0;
-
 noisyPosition.y+=SimplexNoise(gl_Vertex.xz,128.0,16.0,gradient);
 noisyPosition.y+=SimplexNoise(gl_Vertex.xz,64.0,8.0,gradient);
-noisyPosition.y+=SimplexNoise(gl_Vertex.xz,32.0,4.0,gradient);
-noisyPosition.y+=SimplexNoise(gl_Vertex.xz,16.0,2.0,gradient);
-noisyPosition.y+=SimplexNoise(gl_Vertex.xz,8.0,1.0,gradient);
+noisyPosition.y+=SimplexNoise(gl_Vertex.xz,32.0,2.0,gradient);
+noisyPosition.y+=SimplexNoise(gl_Vertex.xz,16.0,1.0,gradient);
+noisyPosition.y+=SimplexNoise(gl_Vertex.xz,8.0,0.5,gradient);
+noisyPosition.y+=SimplexNoise(gl_Vertex.xz,4.0,0.25,gradient);
 
-vec3 normal=vec3(0.0,1.0,0.0);
-normal.xz=-gradient;
-
-
-
-normal=normalize(normal);
-
+normal=normalize(vec3(-gradient.x,1.0,-gradient.y));
 gl_Position=gl_ModelViewProjectionMatrix*noisyPosition;
-
-float lambert=dot(normal,normalize(vec3(0.0,1.0,1.0)));
-if(lambert<0.0)
-{
-lambert=0.0;//Area is not facing light source
-}
-radiance=(0.2+lambert)/2.0;
-
 }
