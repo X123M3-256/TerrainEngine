@@ -1,3 +1,4 @@
+#include<math.h>
 #include "math.h"
 Quaternion QuaternionConjugate(Quaternion Quat)
 {
@@ -50,28 +51,28 @@ float JK=Qtr.J*Qtr.K;
 float IW=Qtr.I*Qtr.W;
 
 RotationMatrix.Data[0]=1-2*(SQ(Qtr.J)+SQ(Qtr.K));
-RotationMatrix.Data[1]=2*(IJ+KW);
-RotationMatrix.Data[2]=2*(IK-JW);
-RotationMatrix.Data[3]=0;
-
 RotationMatrix.Data[4]=2*(IJ-KW);
-RotationMatrix.Data[5]=1-2*(SQ(Qtr.I)+SQ(Qtr.K));
-RotationMatrix.Data[6]=2*(JK+IW);
-RotationMatrix.Data[7]=0;
-
 RotationMatrix.Data[8]=2*(IK+JW);
-RotationMatrix.Data[9]=2*(JK-IW);
-RotationMatrix.Data[10]=1-2*(SQ(Qtr.I)+SQ(Qtr.J));
-RotationMatrix.Data[11]=0;
-
 RotationMatrix.Data[12]=0;
+
+RotationMatrix.Data[1]=2*(IJ+KW);
+RotationMatrix.Data[5]=1-2*(SQ(Qtr.I)+SQ(Qtr.K));
+RotationMatrix.Data[9]=2*(JK-IW);
 RotationMatrix.Data[13]=0;
+
+RotationMatrix.Data[2]=2*(IK-JW);
+RotationMatrix.Data[6]=2*(JK+IW);
+RotationMatrix.Data[10]=1-2*(SQ(Qtr.I)+SQ(Qtr.J));
 RotationMatrix.Data[14]=0;
+
+
+RotationMatrix.Data[3]=0;
+RotationMatrix.Data[7]=0;
+RotationMatrix.Data[11]=0;
 RotationMatrix.Data[15]=1;
 
 return RotationMatrix;
 }
-
 
 Vector VectorNormalize(Vector A)
 {
@@ -107,4 +108,71 @@ Result.X=A.X-B.X;
 Result.Y=A.Y-B.Y;
 Result.Z=A.Z-B.Z;
 return Result;
+}
+
+Matrix MatrixIdentity()
+{
+Matrix matrix;
+
+matrix.Data[0]=1;
+matrix.Data[4]=0;
+matrix.Data[8]=0;
+matrix.Data[12]=0;
+
+matrix.Data[1]=0;
+matrix.Data[5]=1;
+matrix.Data[9]=0;
+matrix.Data[13]=0;
+
+matrix.Data[2]=0;
+matrix.Data[6]=0;
+matrix.Data[10]=1;
+matrix.Data[14]=0;
+
+matrix.Data[3]=0;
+matrix.Data[7]=0;
+matrix.Data[11]=0;
+matrix.Data[15]=1;
+
+return matrix;
+}
+
+Matrix MatrixMultiply(Matrix A,Matrix B)
+{
+Matrix result;
+int i,row,column;
+    for(row=0;row<4;row++)
+    for(column=0;column<4;column++)
+    {
+    result.Data[4*column+row]=0;
+        for(i=0;i<4;i++)result.Data[4*column+row]+=A.Data[4*i+row]*B.Data[4*column+i];
+    }
+return result;
+}
+
+Matrix ProjectionMatrix(float left,float right,float bottom,float top,float near,float far)
+{
+Matrix matrix;
+
+matrix.Data[0]=2*near/(right-left);
+matrix.Data[4]=0;
+matrix.Data[8]=(right+left)/(right-left);
+matrix.Data[12]=0;
+
+matrix.Data[1]=0;
+matrix.Data[5]=2*near/(top-bottom);
+matrix.Data[9]=2*(top+bottom)/(top-bottom);
+matrix.Data[13]=0;
+
+matrix.Data[2]=0;
+matrix.Data[6]=0;
+matrix.Data[10]=-(far+near)/(far-near);
+matrix.Data[14]=-2*far*near/(far-near);
+
+matrix.Data[3]=0;
+matrix.Data[7]=0;
+matrix.Data[11]=-1;
+matrix.Data[15]=0;
+
+return matrix;
 }

@@ -31,4 +31,11 @@ Vector VectorNormalize(Vector A);
 Vector VectorAdd(Vector A,Vector B);
 Vector VectorSubtract(Vector A,Vector B);
 Vector VectorCrossProduct(Vector A,Vector B);
+
+Matrix MatrixIdentity();
+Matrix MatrixMultiply(Matrix A,Matrix B);
+
+
+Matrix ProjectionMatrix(float left,float right,float bottom,float top,float near,float far);
+
 #endif // MATH_H_INCLUDED
