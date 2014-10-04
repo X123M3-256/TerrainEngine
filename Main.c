@@ -9,6 +9,7 @@
 int running=true;
 int ScreenWidth=1000;
 int ScreenHeight=800;
+Matrix projectionMatrix;
 double AspectRatio=0;
 SDL_Surface* Display_Surface=NULL;
 
@@ -44,10 +45,10 @@ if(SDL_Init(SDL_INIT_EVERYTHING)<0)return false;
 Display_Surface=SDL_SetVideoMode(ScreenWidth,ScreenHeight,32,SDL_HWSURFACE|SDL_OPENGL);
 SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER,1);
 if(Display_Surface==NULL)return false;
-glMatrixMode(GL_PROJECTION);
-glLoadIdentity();
-glFrustum(-1,1,-1/AspectRatio,1/AspectRatio,1,1000);
+
+projectionMatrix=ProjectionMatrix(-1,1,-1/AspectRatio,1/AspectRatio,1,10000);
 glClearColor(0,0.4,0.8,1);
+
 glEnable(GL_DEPTH_TEST);
 glEnable(GL_CULL_FACE);
 glFrontFace(GL_CW);
@@ -108,7 +109,7 @@ break;
 void RunPhysics()
 {
 UpdateTimer();
-//printf("FPS: %f\n",1/deltaT);
+printf("FPS: %f\n",1/deltaT);
 
 //Do camera movement
 YawCamera(&camera,(mousex-0.5)*2*deltaT);
@@ -119,7 +120,7 @@ PitchCamera(&camera,(mousey-0.5)*2*deltaT);
     Vector forward;
     forward.X=0;
     forward.Y=0;
-    forward.Z=-0.5;
+    forward.Z=-5.5;
     TranslateCamera(&camera,forward);
     }
     else if(rightclick)
@@ -127,7 +128,7 @@ PitchCamera(&camera,(mousey-0.5)*2*deltaT);
     Vector backward;
     backward.X=0;
     backward.Y=0;
-    backward.Z=0.5;
+    backward.Z=5.5;
     TranslateCamera(&camera,backward);
     }
 }
@@ -138,7 +139,8 @@ void RenderScreen()
 {
 glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
-RenderTerrain(&camera,&testterrain);
+
+RenderTerrain(&testterrain,&camera,MatrixMultiply(projectionMatrix,MatrixFromCamera(&camera)));
 SDL_GL_SwapBuffers();
 glFinish();
 }

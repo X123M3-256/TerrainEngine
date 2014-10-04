@@ -24,6 +24,7 @@ typedef struct
 {
 int width;
 int height;
+GLuint heightMapTex;
 TerrainPoint** heightMap;
 }Terrain;
 
@@ -35,7 +36,7 @@ void FinishTerrainSystem();
 Terrain CreateTerrain(int width,int height);
 
 //Rendering code
-void RenderTerrain(Terrain* terrain,Matrix modelViewProjection);
+void RenderTerrain(Terrain* terrain,Camera* camera,Matrix modelViewProjection);
 
 
 

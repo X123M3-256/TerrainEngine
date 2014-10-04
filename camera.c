@@ -54,10 +54,7 @@ Matrix MatrixFromCamera(Camera* camera)
 {
 Matrix rotation=MatrixFromQuaternion(camera->Rotation);
 
-Matrix matrix=MatrixIdentity();
-matrix.Data[12]-=camera->Position.X;
-matrix.Data[13]-=camera->Position.Y;
-matrix.Data[14]-=camera->Position.Z;
+Matrix matrix=TranslationMatrix(camera->Position);
 matrix=MatrixMultiply(rotation,matrix);
 
 return matrix;
