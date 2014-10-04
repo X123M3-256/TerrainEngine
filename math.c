@@ -93,6 +93,17 @@ Result.Y=A.Y-B.Y;
 Result.Z=A.Z-B.Z;
 return Result;
 }
+
+Vector VectorMultiply(Vector A,float B)
+{
+A.X*=B;
+A.Y*=B;
+A.Z*=B;
+return A;
+}
+
+
+
 Matrix MatrixIdentity()
 {
 Matrix matrix;

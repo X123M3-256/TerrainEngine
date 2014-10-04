@@ -31,6 +31,8 @@ Vector VectorNormalize(Vector A);
 Vector VectorAdd(Vector A,Vector B);
 Vector VectorSubtract(Vector A,Vector B);
 Vector VectorCrossProduct(Vector A,Vector B);
+Vector VectorMultiply(Vector A,float B);
+
 
 Matrix MatrixIdentity();
 Matrix MatrixMultiply(Matrix A,Matrix B);
