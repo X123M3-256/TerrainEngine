@@ -1,4 +1,3 @@
-varying float altitude;
 varying float lambert;
 
 
