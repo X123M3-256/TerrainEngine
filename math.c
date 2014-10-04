@@ -74,6 +74,10 @@ A.Y/=magnitude;
 A.Z/=magnitude;
 return A;
 }
+float VectorDotProduct(Vector A,Vector B)
+{
+return A.X*B.X+A.Y*B.Y+A.Z*B.Z;
+}
 Vector VectorCrossProduct(Vector A,Vector B)
 {
 Vector Result;

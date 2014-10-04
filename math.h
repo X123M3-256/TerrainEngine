@@ -31,6 +31,7 @@ float VectorMagnitude(Vector A);
 Vector VectorNormalize(Vector A);
 Vector VectorAdd(Vector A,Vector B);
 Vector VectorSubtract(Vector A,Vector B);
+float VectorDotProduct(Vector A,Vector B);
 Vector VectorCrossProduct(Vector A,Vector B);
 Vector VectorMultiply(Vector A,float B);
 
