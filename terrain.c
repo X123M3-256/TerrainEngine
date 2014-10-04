@@ -3,7 +3,7 @@
 //*********************************************************************************************
 //*************************ALL TERRAIN ENGINE CODE HERE****************************************
 //*********************************************************************************************
-#define PATCH_SIZE 256
+#define PATCH_SIZE 128
 #define HALF_PATCH_SIZE 64
 #define POINTS_PER_SIDE 129
 #define NUM_INDICES 33280
@@ -146,6 +146,70 @@ glDrawElements(GL_TRIANGLE_STRIP,NUM_INDICES,GL_UNSIGNED_SHORT,0);
 }
 
 
+void EpicRecursiveRenderTime(int scale,Vector displacement,Vector cameraPosition,Matrix modelViewProjection)
+{
+//Compute centre
+Vector centre;
+centre.X=displacement.X;
+centre.Z=displacement.Y;
+centre.Y=0;
+centre.X+=scale*128;
+centre.Z+=scale*128;
+float distance=VectorMagnitude(VectorSubtract(centre,cameraPosition))-scale*128;
+//printf("%f\n",distance);
+    if(distance<scale*256&&scale>1)
+    {
+    scale/=2;
+    Vector translation;
+    translation.X=0;
+    translation.Y=0;
+    translation.Z=0;
+    EpicRecursiveRenderTime(scale,VectorAdd(displacement,translation),cameraPosition,modelViewProjection);
+    translation.X=scale*256;
+    EpicRecursiveRenderTime(scale,VectorAdd(displacement,translation),cameraPosition,modelViewProjection);
+    translation.Y=translation.X;
+    EpicRecursiveRenderTime(scale,VectorAdd(displacement,translation),cameraPosition,modelViewProjection);
+    translation.X=0;
+    EpicRecursiveRenderTime(scale,VectorAdd(displacement,translation),cameraPosition,modelViewProjection);
+    return;
+    }
+RenderPatch(scale,displacement,modelViewProjection);
+}
+
+
+void DrawBox(float x,float y,float z,float size)
+{
+glVertex3f(x-size,y,z+size);
+glVertex3f(x+size,y,z+size);
+glVertex3f(x+size,y,z-size);
+glVertex3f(x-size,y,z-size);
+
+glVertex3f(x-size,y+2*size,z+size);
+glVertex3f(x+size,y+2*size,z+size);
+glVertex3f(x+size,y+2*size,z-size);
+glVertex3f(x-size,y+2*size,z-size);
+
+glVertex3f(x-size,y+2*size,z+size);
+glVertex3f(x+size,y+2*size,z+size);
+glVertex3f(x+size,y,z+size);
+glVertex3f(x-size,y,z+size);
+
+glVertex3f(x-size,y+2*size,z-size);
+glVertex3f(x+size,y+2*size,z-size);
+glVertex3f(x+size,y,z-size);
+glVertex3f(x-size,y,z-size);
+
+glVertex3f(x+size,y+2*size,z-size);
+glVertex3f(x+size,y+2*size,z+size);
+glVertex3f(x+size,y,z+size);
+glVertex3f(x+size,y,z-size);
+
+glVertex3f(x-size,y+2*size,z-size);
+glVertex3f(x-size,y+2*size,z+size);
+glVertex3f(x-size,y,z+size);
+glVertex3f(x-size,y,z-size);
+}
+
 void RenderTerrain(Terrain* terrain,Camera* camera,Matrix modelViewProjection)
 {
 glEnableClientState(GL_VERTEX_ARRAY);
@@ -160,11 +224,7 @@ displacement.X=0;
 displacement.Y=0;
 displacement.Z=0;
 
-RenderPatch(64,displacement,modelViewProjection);
-
-
-
-
+EpicRecursiveRenderTime(64,displacement,camera->Position,modelViewProjection);
 
 
 glDisableClientState(GL_VERTEX_ARRAY);
