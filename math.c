@@ -61,6 +61,11 @@ RotationMatrix.Data[11]=0;
 RotationMatrix.Data[15]=1;
 return RotationMatrix;
 }
+
+float VectorMagnitude(Vector A)
+{
+return sqrt(A.X*A.X+A.Y*A.Y+A.Z*A.Z);
+}
 Vector VectorNormalize(Vector A)
 {
 float magnitude=sqrt(A.X*A.X+A.Y*A.Y+A.Z*A.Z);

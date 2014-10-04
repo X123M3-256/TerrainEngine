@@ -27,6 +27,7 @@ Quaternion QuaternionMultiply(Quaternion A,Quaternion B);
 Vector QuaternionTransformVector(Quaternion Quat,Vector Vec);
 Matrix MatrixFromQuaternion(Quaternion Qtr);
 
+float VectorMagnitude(Vector A);
 Vector VectorNormalize(Vector A);
 Vector VectorAdd(Vector A,Vector B);
 Vector VectorSubtract(Vector A,Vector B);
