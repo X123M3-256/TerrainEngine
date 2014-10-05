@@ -2,9 +2,9 @@
 uniform mat4 modelViewProjection;
 uniform float scale;
 uniform vec2 displacement;
+uniform sampler2D heightmap;
 
 varying float lambert;
-
 
 
 const uint gradients[8]=uint[8](0xEu,0x4u,0xCu,0x8u,0xDu,0x5u,0xFu,0xAu);
@@ -112,6 +112,18 @@ vec4 displacedPosition=worldSpacePosition;
 //Add simplex noise
 vec2 gradient=vec2(0.0,0.0);
 
+//Linear filtering may not work so we implement it here
+ivec2 coords=ivec2(worldSpacePosition.xz/256.0);
+vec2 leftHeights=vec2(texelFetch(heightmap,coords,0).r,texelFetch(heightmap,coords+ivec2(0,1),0).r);
+vec2 rightHeights=vec2(texelFetch(heightmap,coords+ivec2(1,0),0).r,texelFetch(heightmap,coords+ivec2(1,1),0).r);
+vec2 heights=mix(leftHeights,rightHeights,fract(worldSpacePosition.x/256));
+float height=mix(heights.x,heights.y,fract(worldSpacePosition.z/256));
+//Compute gradient
+gradient.x=mix(leftHeights.y-leftHeights.x,rightHeights.y-rightHeights.x,fract(worldSpacePosition.x/256))/256;
+gradient.y=mix(rightHeights.x-leftHeights.x,rightHeights.y-leftHeights.y,fract(worldSpacePosition.z/256))/256;
+
+displacedPosition.y+=height;
+
 displacedPosition.y+=SimplexNoise(worldSpacePosition.xz,128.0,16.0,gradient);
 displacedPosition.y+=SimplexNoise(worldSpacePosition.xz,64.0,8.0,gradient);
 displacedPosition.y+=SimplexNoise(worldSpacePosition.xz,32.0,4.0,gradient);
@@ -119,6 +131,7 @@ displacedPosition.y+=SimplexNoise(worldSpacePosition.xz,16.0,2.0,gradient);
 displacedPosition.y+=SimplexNoise(worldSpacePosition.xz,8.0,1.0,gradient);
 
 vec3 normal=normalize(vec3(-gradient.x,1.0,-gradient.y));
+
 lambert=clamp(dot(normal,vec3(0.0,0.866,0.5)),0.0,1.0);
 
 gl_Position=modelViewProjection*displacedPosition;

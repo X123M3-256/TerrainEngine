@@ -1,5 +1,5 @@
 #include "terrain.h"
-
+#include "simplex.h"
 //*********************************************************************************************
 //*************************ALL TERRAIN ENGINE CODE HERE****************************************
 //*********************************************************************************************
@@ -15,6 +15,7 @@ struct
     GLint MVPLocation;
     GLint scaleLocation;
     GLint displacementLocation;
+    GLint heightmapLocation;
     }Resources;
 
 
@@ -36,8 +37,10 @@ glLinkProgram(Resources.Shader);
 Resources.MVPLocation=glGetUniformLocation(Resources.Shader,"modelViewProjection");
 Resources.scaleLocation=glGetUniformLocation(Resources.Shader,"scale");
 Resources.displacementLocation=glGetUniformLocation(Resources.Shader,"displacement");
-char error[256];
-glGetShaderInfoLog(vertexshader,255,NULL,error);
+Resources.heightmapLocation=glGetUniformLocation(Resources.Shader,"heightmap");
+
+char error[1024];
+glGetShaderInfoLog(vertexshader,1023,NULL,error);
 printf("version %s\n",glGetString(GL_SHADING_LANGUAGE_VERSION));
 printf("error %s\n",error);
 }
@@ -101,11 +104,6 @@ void FinishTerrainSystem()
 }
 
 
-void CreateTexture(Terrain* terrain)
-{
-glGenTextures(1,&(terrain->heightMapTex));
-glBindTexture(GL_TEXTURE_2D,terrain->heightMapTex);
-}
 
 Terrain CreateTerrain(int width,int height)
 {
@@ -114,20 +112,36 @@ Terrain terrain;
 terrain.width=width;
 terrain.height=height;
 
+//Generate heightmap
 int xpoints=width+1;
 int ypoints=height+1;
 
 terrain.heightMap=malloc(xpoints*sizeof(TerrainPoint*));
-int i,j;
+GLfloat* texData=malloc(xpoints*ypoints*sizeof(GLfloat));
+int i,j,index=0;
     for(i=0;i<xpoints;i++)
     {
     terrain.heightMap[i]=malloc(ypoints*sizeof(TerrainPoint));
         for(j=0;j<ypoints;j++)
         {
-        terrain.heightMap[i][j].height=(int)(SimplexNoise(i/8.0,j/8.0,1)*2000+SimplexNoise(i/4.0,j/4.0,2)*1000+SimplexNoise(i/2.0,j/2.0,3)*500+SimplexNoise(i,j,3)*250);
+        texData[index]=(SimplexNoise(i/8.0,j/8.0,1)*200+SimplexNoise(i/4.0,j/4.0,2)*100+SimplexNoise(i/2.0,j/2.0,3)*50+SimplexNoise(i,j,3)*25);
+        terrain.heightMap[i][j].height=(int)texData[index];
         terrain.heightMap[i][j].roughness=i*10+j*10;
+        index++;
         }
     }
+
+//Generate texture
+glGenTextures(1,&(terrain.heightMapTex));
+glBindTexture(GL_TEXTURE_2D,terrain.heightMapTex);
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+glTexImage2D(GL_TEXTURE_2D,0,GL_LUMINANCE32F_ARB,xpoints,ypoints,0,GL_LUMINANCE,GL_FLOAT,texData);
+free(texData);
+
+
 return terrain;
 }
 
@@ -140,6 +154,7 @@ void RenderPatch(float scale,Vector displacement,Matrix modelViewProjection)
 {
 glUniformMatrix4fv(Resources.MVPLocation,1,GL_FALSE,&(modelViewProjection.Data));
 
+glUniform1i(Resources.heightmapLocation,0);
 glUniform1fv(Resources.scaleLocation,1,&scale);
 glUniform2fv(Resources.displacementLocation,1,&displacement);
 glDrawElements(GL_TRIANGLE_STRIP,NUM_INDICES,GL_UNSIGNED_SHORT,0);
@@ -192,6 +207,9 @@ glUseProgram(Resources.Shader);
 glBindBuffer(GL_ARRAY_BUFFER,Resources.VBO);
 glVertexPointer(3,GL_FLOAT,32,0);
 glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,Resources.IBO);
+
+glActiveTexture(GL_TEXTURE0);
+glBindTexture(GL_TEXTURE_2D,terrain->heightMapTex);
 
 
 Vector cameraDirection;
