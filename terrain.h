@@ -33,7 +33,7 @@ void InitialiseTerrainSystem();
 
 void FinishTerrainSystem();
 
-Terrain CreateTerrain(int width,int height);
+Terrain CreateTerrain(const char* filename);
 
 //Rendering code
 void RenderTerrain(Terrain* terrain,Camera* camera,Matrix modelViewProjection);

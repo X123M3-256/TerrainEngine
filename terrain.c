@@ -1,3 +1,4 @@
+#include<stdio.h>
 #include "terrain.h"
 #include "simplex.h"
 //*********************************************************************************************
@@ -105,31 +106,37 @@ void FinishTerrainSystem()
 
 
 
-Terrain CreateTerrain(int width,int height)
+Terrain CreateTerrain(const char* filename)
 {
 Terrain terrain;
 
-terrain.width=width;
-terrain.height=height;
+
+
+terrain.width=255;//width;
+terrain.height=255;//height;
 
 //Generate heightmap
-int xpoints=width+1;
-int ypoints=height+1;
+int xpoints=terrain.width+1;
+int ypoints=terrain.width+1;
+
 
 terrain.heightMap=malloc(xpoints*sizeof(TerrainPoint*));
 GLfloat* texData=malloc(xpoints*ypoints*sizeof(GLfloat));
+
+FILE* file=fopen(filename,"r");
 int i,j,index=0;
     for(i=0;i<xpoints;i++)
     {
     terrain.heightMap[i]=malloc(ypoints*sizeof(TerrainPoint));
         for(j=0;j<ypoints;j++)
         {
-        texData[index]=(SimplexNoise(i/8.0,j/8.0,1)*200+SimplexNoise(i/4.0,j/4.0,2)*100+SimplexNoise(i/2.0,j/2.0,3)*50+SimplexNoise(i,j,3)*25);
+        texData[index]=fgetc(file)*10.0;//(SimplexNoise(i/32.0,j/32.0,1)*800+SimplexNoise(i/16.0,j/16.0,1)*400+SimplexNoise(i/8.0,j/8.0,1)*200+SimplexNoise(i/4.0,j/4.0,2)*100+SimplexNoise(i/2.0,j/2.0,3)*50+SimplexNoise(i,j,3)*25);
         terrain.heightMap[i][j].height=(int)texData[index];
         terrain.heightMap[i][j].roughness=i*10+j*10;
         index++;
         }
     }
+fclose(file);
 
 //Generate texture
 glGenTextures(1,&(terrain.heightMapTex));
@@ -170,15 +177,14 @@ centre.Z=displacement.Y;
 centre.Y=0;
 centre.X+=scale*128;
 centre.Z+=scale*128;
-
+cameraPosition.Y=0;
 Vector cameraToCentre=VectorSubtract(centre,cameraPosition);
 float distance=VectorMagnitude(cameraToCentre);//Compute distance to center of patch
 cameraToCentre=VectorMultiply(cameraToCentre,1/distance);//Normalize
 distance-=scale*(128*1.414);//We want the distance to the *edge* of the patch
 //Remove those areas behind the viewer
-    if(VectorDotProduct(cameraToCentre,cameraDirection)<-0.3&&distance>0)return;
-
-    if(distance<scale*150&&scale>1)
+ //   if(VectorDotProduct(cameraToCentre,cameraDirection)<-0.5&&distance>0)return;
+    if(distance<scale*150&&scale>4)
     {
     scale/=2;
     Vector translation;
@@ -224,7 +230,7 @@ displacement.X=0;
 displacement.Y=0;
 displacement.Z=0;
 
-EpicRecursiveRenderTime(64,displacement,camera->Position,cameraDirection,modelViewProjection);
+EpicRecursiveRenderTime(128,displacement,camera->Position,cameraDirection,modelViewProjection);
 
 
 glDisableClientState(GL_VERTEX_ARRAY);
