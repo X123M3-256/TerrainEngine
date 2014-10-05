@@ -113,22 +113,27 @@ vec4 displacedPosition=worldSpacePosition;
 vec2 gradient=vec2(0.0,0.0);
 
 //Linear filtering may not work so we implement it here
-ivec2 coords=ivec2(worldSpacePosition.xz/256.0);
-vec2 leftHeights=vec2(texelFetch(heightmap,coords,0).r,texelFetch(heightmap,coords+ivec2(0,1),0).r);
-vec2 rightHeights=vec2(texelFetch(heightmap,coords+ivec2(1,0),0).r,texelFetch(heightmap,coords+ivec2(1,1),0).r);
-vec2 heights=mix(leftHeights,rightHeights,fract(worldSpacePosition.x/256));
-float height=mix(heights.x,heights.y,fract(worldSpacePosition.z/256));
+ivec2 coords=ivec2(worldSpacePosition.xz/128.0);
+
+float point00=texelFetch(heightmap,coords,0).r;
+float point01=texelFetch(heightmap,coords+ivec2(0,1),0).r;
+float point10=texelFetch(heightmap,coords+ivec2(1,0),0).r;
+float point11=texelFetch(heightmap,coords+ivec2(1,1),0).r;
+float point0=mix(point00,point01,fract(worldSpacePosition.z/128.0));
+float point1=mix(point10,point11,fract(worldSpacePosition.z/128.0));
+float point=mix(point0,point1,fract(worldSpacePosition.x/128.0));
 //Compute gradient
-gradient.x=mix(leftHeights.y-leftHeights.x,rightHeights.y-rightHeights.x,fract(worldSpacePosition.x/256))/256;
-gradient.y=mix(rightHeights.x-leftHeights.x,rightHeights.y-leftHeights.y,fract(worldSpacePosition.z/256))/256;
+gradient.x=mix(point11-point10,point01-point00,fract(worldSpacePosition.x/256))/128.0;
+gradient.y=mix(point11-point01,point10-point00,fract(worldSpacePosition.z/256))/128.0;
 
-displacedPosition.y+=height;
+displacedPosition.y+=point;
 
-displacedPosition.y+=SimplexNoise(worldSpacePosition.xz,128.0,16.0,gradient);
-displacedPosition.y+=SimplexNoise(worldSpacePosition.xz,64.0,8.0,gradient);
-displacedPosition.y+=SimplexNoise(worldSpacePosition.xz,32.0,4.0,gradient);
-displacedPosition.y+=SimplexNoise(worldSpacePosition.xz,16.0,2.0,gradient);
-displacedPosition.y+=SimplexNoise(worldSpacePosition.xz,8.0,1.0,gradient);
+float roughness=0.1;
+displacedPosition.y+=SimplexNoise(worldSpacePosition.xz,256.0,roughness*64.0,gradient);
+displacedPosition.y+=SimplexNoise(worldSpacePosition.xz,64.0,roughness*16.0,gradient);
+displacedPosition.y+=SimplexNoise(worldSpacePosition.xz,16.0,roughness*4.0,gradient);
+
+
 
 vec3 normal=normalize(vec3(-gradient.x,1.0,-gradient.y));
 
