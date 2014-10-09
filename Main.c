@@ -58,7 +58,7 @@ InitialiseTerrainSystem();
 camera=CreateCamera();
 YawCamera(&camera,2);
 
-testterrain=CreateTerrain(10,10);
+testterrain=CreateTerrain("testheightmap.png");
 
 return true;
 }
@@ -151,7 +151,7 @@ FinishTerrainSystem(&testterrain);
 SDL_Quit();
 }
 
-int main()
+int main(int argc,char* argv[])
 {
 Init();
 while(running)

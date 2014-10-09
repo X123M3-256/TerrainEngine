@@ -5,6 +5,9 @@
 #include <stdlib.h>
 #include<GL/gl.h>
 #include<GL/glu.h>
+#include<GL/glext.h>
+
+#include<math.h>
 #include "math.h"
 
 
@@ -19,6 +22,6 @@ Vector normal;
 GLubyte padding[8];
 }Vertex;
 
-char* ReadFile(char* filename);
+char* ReadFileString(char* filename);
 
 #endif // ENGINE_H_INCLUDED
