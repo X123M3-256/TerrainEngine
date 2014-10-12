@@ -17,6 +17,12 @@ struct
     GLint scaleLocation;
     GLint displacementLocation;
     GLint heightmapLocation;
+
+    GLuint WaterShader;//Temporary
+    GLint waterMVPLocation;
+    GLint waterScaleLocation;
+    GLint waterDisplacementLocation;
+    GLint waterHeightmapLocation;
     }Resources;
 
 
@@ -35,10 +41,38 @@ glCompileShader(vertexshader);
 glCompileShader(fragmentshader);
 glLinkProgram(Resources.Shader);
 
+
 Resources.MVPLocation=glGetUniformLocation(Resources.Shader,"modelViewProjection");
 Resources.scaleLocation=glGetUniformLocation(Resources.Shader,"scale");
 Resources.displacementLocation=glGetUniformLocation(Resources.Shader,"displacement");
 Resources.heightmapLocation=glGetUniformLocation(Resources.Shader,"heightmap");
+
+char error[1024];
+glGetShaderInfoLog(vertexshader,1023,NULL,error);
+printf("version %s\n",glGetString(GL_SHADING_LANGUAGE_VERSION));
+printf("error %s\n",error);
+}
+
+void CreateWaterShader()
+{
+GLuint vertexshader=glCreateShader(GL_VERTEX_SHADER);
+GLuint fragmentshader=glCreateShader(GL_FRAGMENT_SHADER);
+Resources.WaterShader=glCreateProgram();
+glAttachShader(Resources.WaterShader,vertexshader);
+glAttachShader(Resources.WaterShader,fragmentshader);
+char* vertsrc=ReadFile("watervertexshader.glsl");
+char* fragsrc=ReadFile("waterfragmentshader.glsl");
+glShaderSource(vertexshader,1,&vertsrc,NULL);
+glShaderSource(fragmentshader,1,&fragsrc,NULL);
+glCompileShader(vertexshader);
+glCompileShader(fragmentshader);
+glLinkProgram(Resources.WaterShader);
+
+
+Resources.waterMVPLocation=glGetUniformLocation(Resources.Shader,"modelViewProjection");
+Resources.waterScaleLocation=glGetUniformLocation(Resources.Shader,"scale");
+Resources.waterDisplacementLocation=glGetUniformLocation(Resources.Shader,"displacement");
+Resources.waterHeightmapLocation=glGetUniformLocation(Resources.Shader,"heightmap");
 
 char error[1024];
 glGetShaderInfoLog(vertexshader,1023,NULL,error);
@@ -96,6 +130,7 @@ void InitialiseTerrainSystem()
 {
 printf("Initialising terrain system\n");
 CreateTerrainShader();
+CreateWaterShader();
 InitBuffers();
 }
 
@@ -121,7 +156,7 @@ int ypoints=terrain.width+1;
 
 
 terrain.heightMap=malloc(xpoints*sizeof(TerrainPoint*));
-GLfloat* texData=malloc(xpoints*ypoints*sizeof(GLfloat));
+GLfloat* texData=malloc(xpoints*ypoints*sizeof(GLfloat)*4);
 
 FILE* file=fopen(filename,"r");
 int i,j,index=0;
@@ -130,7 +165,8 @@ int i,j,index=0;
     terrain.heightMap[i]=malloc(ypoints*sizeof(TerrainPoint));
         for(j=0;j<ypoints;j++)
         {
-        texData[index]=fgetc(file)*10.0;//(SimplexNoise(i/32.0,j/32.0,1)*800+SimplexNoise(i/16.0,j/16.0,1)*400+SimplexNoise(i/8.0,j/8.0,1)*200+SimplexNoise(i/4.0,j/4.0,2)*100+SimplexNoise(i/2.0,j/2.0,3)*50+SimplexNoise(i,j,3)*25);
+        texData[index*4]=fgetc(file)*10.0;//(SimplexNoise(i/32.0,j/32.0,1)*800+SimplexNoise(i/16.0,j/16.0,1)*400+SimplexNoise(i/8.0,j/8.0,1)*200+SimplexNoise(i/4.0,j/4.0,2)*100+SimplexNoise(i/2.0,j/2.0,3)*50+SimplexNoise(i,j,3)*25);
+        texData[1+index*4]=200.0;
         terrain.heightMap[i][j].height=(int)texData[index];
         terrain.heightMap[i][j].roughness=i*10+j*10;
         index++;
@@ -145,12 +181,14 @@ glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
 glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-glTexImage2D(GL_TEXTURE_2D,0,GL_LUMINANCE32F_ARB,xpoints,ypoints,0,GL_LUMINANCE,GL_FLOAT,texData);
+glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA32F_ARB,xpoints,ypoints,0,GL_RGBA,GL_FLOAT,texData);
 free(texData);
 
 
 return terrain;
 }
+
+
 
 void FreeTerrain(Terrain* terrain)
 {
@@ -167,6 +205,14 @@ glUniform2fv(Resources.displacementLocation,1,&displacement);
 glDrawElements(GL_TRIANGLE_STRIP,NUM_INDICES,GL_UNSIGNED_SHORT,0);
 }
 
+void RenderWaterPatch(float scale,Vector displacement,Matrix modelViewProjection)
+{
+glUniformMatrix4fv(Resources.waterMVPLocation,1,GL_FALSE,&(modelViewProjection.Data));
+glUniform1i(Resources.waterHeightmapLocation,0);
+glUniform1fv(Resources.waterScaleLocation,1,&scale);
+glUniform2fv(Resources.waterDisplacementLocation,1,&displacement);
+glDrawElements(GL_TRIANGLE_STRIP,NUM_INDICES,GL_UNSIGNED_SHORT,0);
+}
 
 void EpicRecursiveRenderTime(int scale,Vector displacement,Vector cameraPosition,Vector cameraDirection,Matrix modelViewProjection)
 {
@@ -200,7 +246,11 @@ distance-=scale*(128*1.414);//We want the distance to the *edge* of the patch
     EpicRecursiveRenderTime(scale,VectorAdd(displacement,translation),cameraPosition,cameraDirection,modelViewProjection);
     return;
     }
+
+glUseProgram(Resources.Shader);
 RenderPatch(scale,displacement,modelViewProjection);
+//glUseProgram(Resources.WaterShader);
+//RenderPatch(scale,displacement,modelViewProjection);
 }
 
 
@@ -232,6 +282,8 @@ displacement.Z=0;
 
 EpicRecursiveRenderTime(128,displacement,camera->Position,cameraDirection,modelViewProjection);
 
+
+EpicRecursiveRenderTime(128,displacement,camera->Position,cameraDirection,modelViewProjection);
 
 glDisableClientState(GL_VERTEX_ARRAY);
 }

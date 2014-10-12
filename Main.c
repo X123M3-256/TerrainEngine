@@ -6,6 +6,7 @@
 #include "camera.h"
 #include "terrain.h"
 
+
 int running=true;
 int ScreenWidth=1000;
 int ScreenHeight=800;
@@ -46,7 +47,7 @@ Display_Surface=SDL_SetVideoMode(ScreenWidth,ScreenHeight,32,SDL_HWSURFACE|SDL_O
 SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER,1);
 if(Display_Surface==NULL)return false;
 
-projectionMatrix=ProjectionMatrix(-1,1,-1/AspectRatio,1/AspectRatio,1,10000);
+projectionMatrix=ProjectionMatrix(-1,1,-1/AspectRatio,1/AspectRatio,1,100000);
 glClearColor(0,0.4,0.8,1);
 
 glEnable(GL_DEPTH_TEST);
@@ -58,7 +59,7 @@ InitialiseTerrainSystem();
 camera=CreateCamera();
 YawCamera(&camera,2);
 
-testterrain=CreateTerrain(10,10);
+testterrain=CreateTerrain("mountains.data");
 
 return true;
 }
@@ -120,7 +121,7 @@ PitchCamera(&camera,(mousey-0.5)*2*deltaT);
     Vector forward;
     forward.X=0;
     forward.Y=0;
-    forward.Z=-5.5;
+    forward.Z=-5500*deltaT;
     TranslateCamera(&camera,forward);
     }
     else if(rightclick)
@@ -128,7 +129,7 @@ PitchCamera(&camera,(mousey-0.5)*2*deltaT);
     Vector backward;
     backward.X=0;
     backward.Y=0;
-    backward.Z=5.5;
+    backward.Z=5500*deltaT;
     TranslateCamera(&camera,backward);
     }
 }
@@ -153,14 +154,32 @@ SDL_Quit();
 
 int main()
 {
+FILE* generator=popen("../TerrainGenerator/bin/Debug/TerrainGenerator","r");
+    if(generator==NULL)exit(1);
 Init();
+camera.Position.Y=5000;
 while(running)
 {
 ProcessEvents();
 RunPhysics();
 RenderScreen();
+
+
+//int i;
+float data[256*256*4];
+float buffer[256*256*2];
+fread(buffer,sizeof(float),256*256*2,generator);
+int i;
+    for(i=0;i<256*256*2;i+=2)
+    {
+    data[i*2]=buffer[i];
+    data[1+i*2]=buffer[i+1];
+    }
+glBindTexture(GL_TEXTURE_2D,testterrain.heightMapTex);
+glTexSubImage2D(GL_TEXTURE_2D,0,0,0,256,256,GL_RGBA,GL_FLOAT,data);
 }
 Quit();
+//pclose(generator);
 return 0;
 }
 

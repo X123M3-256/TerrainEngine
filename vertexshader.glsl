@@ -5,7 +5,7 @@ uniform vec2 displacement;
 uniform sampler2D heightmap;
 
 varying float lambert;
-
+varying float water;
 
 const uint gradients[8]=uint[8](0xEu,0x4u,0xCu,0x8u,0xDu,0x5u,0xFu,0xAu);
 const float skewFactor=0.366025404;//0.5*(sqrt(3.0)-1.0)
@@ -126,9 +126,12 @@ float point=mix(point0,point1,fract(worldSpacePosition.x/128.0));
 gradient.x=mix(point11-point10,point01-point00,fract(worldSpacePosition.x/256))/128.0;
 gradient.y=mix(point11-point01,point10-point00,fract(worldSpacePosition.z/256))/128.0;
 
-displacedPosition.y+=point;
 
-float roughness=0.1;
+displacedPosition.y+=point+texelFetch(heightmap,coords,0).g;
+water=texelFetch(heightmap,coords,0).g/10.0;
+
+
+float roughness=0.3;
 displacedPosition.y+=SimplexNoise(worldSpacePosition.xz,256.0,roughness*64.0,gradient);
 displacedPosition.y+=SimplexNoise(worldSpacePosition.xz,64.0,roughness*16.0,gradient);
 displacedPosition.y+=SimplexNoise(worldSpacePosition.xz,16.0,roughness*4.0,gradient);
