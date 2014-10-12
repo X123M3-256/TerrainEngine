@@ -59,7 +59,11 @@ InitialiseTerrainSystem();
 camera=CreateCamera();
 YawCamera(&camera,2);
 
+<<<<<<< HEAD
 testterrain=CreateTerrain("mountains.data");
+=======
+testterrain=CreateTerrain("testheightmap.png");
+>>>>>>> 5e6720bb403a722512a7f149f2298ed10498eeba
 
 return true;
 }
@@ -152,7 +156,7 @@ FinishTerrainSystem(&testterrain);
 SDL_Quit();
 }
 
-int main()
+int main(int argc,char* argv[])
 {
 FILE* generator=popen("../TerrainGenerator/bin/Debug/TerrainGenerator","r");
     if(generator==NULL)exit(1);

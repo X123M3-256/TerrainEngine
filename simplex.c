@@ -1,3 +1,4 @@
+#include "simplex.h"
 typedef struct
 {
 float X;
@@ -54,7 +55,7 @@ float result=0.0;
     }
 return result;
 }
-
+#include <math.h>
 
 float SimplexNoise(float x,float y,unsigned int seed)
 {
