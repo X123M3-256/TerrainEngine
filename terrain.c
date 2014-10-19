@@ -17,12 +17,12 @@ struct
     GLint scaleLocation;
     GLint displacementLocation;
     GLint heightmapLocation;
-
-    GLuint WaterShader;//Temporary
-    GLint waterMVPLocation;
-    GLint waterScaleLocation;
-    GLint waterDisplacementLocation;
-    GLint waterHeightmapLocation;
+    GLint noiseLocation;
+    GLint grassLocation;
+    GLint rockLocation;
+    GLint noiseTexture;
+    GLint grassTexture;
+    GLint rockTexture;
     }Resources;
 
 
@@ -46,39 +46,82 @@ Resources.MVPLocation=glGetUniformLocation(Resources.Shader,"modelViewProjection
 Resources.scaleLocation=glGetUniformLocation(Resources.Shader,"scale");
 Resources.displacementLocation=glGetUniformLocation(Resources.Shader,"displacement");
 Resources.heightmapLocation=glGetUniformLocation(Resources.Shader,"heightmap");
-
+Resources.noiseLocation=glGetUniformLocation(Resources.Shader,"noise");
+Resources.grassLocation=glGetUniformLocation(Resources.Shader,"grass");
+Resources.rockLocation=glGetUniformLocation(Resources.Shader,"rock");
 char error[1024];
 glGetShaderInfoLog(vertexshader,1023,NULL,error);
 printf("version %s\n",glGetString(GL_SHADING_LANGUAGE_VERSION));
 printf("error %s\n",error);
 }
 
-void CreateWaterShader()
+void CreateTerrainTextures()
 {
-GLuint vertexshader=glCreateShader(GL_VERTEX_SHADER);
-GLuint fragmentshader=glCreateShader(GL_FRAGMENT_SHADER);
-Resources.WaterShader=glCreateProgram();
-glAttachShader(Resources.WaterShader,vertexshader);
-glAttachShader(Resources.WaterShader,fragmentshader);
-char* vertsrc=ReadFile("watervertexshader.glsl");
-char* fragsrc=ReadFile("waterfragmentshader.glsl");
-glShaderSource(vertexshader,1,&vertsrc,NULL);
-glShaderSource(fragmentshader,1,&fragsrc,NULL);
-glCompileShader(vertexshader);
-glCompileShader(fragmentshader);
-glLinkProgram(Resources.WaterShader);
+//Create noise
+float* texData=malloc(256*256*sizeof(float));
+int index=0;
+int x,y;
+    for(x=0;x<256;x++)
+    for(y=0;y<256;y++)
+    {
+    float noise=(SimplexNoise(x/32.0,y/32.0,0)*0.5+SimplexNoise(x/32.0,y/32.0,0)*0.25+SimplexNoise(x/16.0,y/16.0,0)*0.125+SimplexNoise(x/8.0,y/8.0,0)*0.0625+1.0)/2.0;
+    texData[index++]=x*y==0?-10:noise;
+    }
+glGenTextures(1,&(Resources.noiseTexture));
+glBindTexture(GL_TEXTURE_2D,Resources.noiseTexture);
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR_MIPMAP_LINEAR);
+glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR);
+gluBuild2DMipmaps(GL_TEXTURE_2D,GL_R32F,256,256,GL_RED,GL_FLOAT,texData);
+free(texData);
 
 
-Resources.waterMVPLocation=glGetUniformLocation(Resources.Shader,"modelViewProjection");
-Resources.waterScaleLocation=glGetUniformLocation(Resources.Shader,"scale");
-Resources.waterDisplacementLocation=glGetUniformLocation(Resources.Shader,"displacement");
-Resources.waterHeightmapLocation=glGetUniformLocation(Resources.Shader,"heightmap");
+unsigned char* data=malloc(512*512*3);
+FILE* file=fopen("grasstexture.data","r");
 
-char error[1024];
-glGetShaderInfoLog(vertexshader,1023,NULL,error);
-printf("version %s\n",glGetString(GL_SHADING_LANGUAGE_VERSION));
-printf("error %s\n",error);
+index=0;
+    for(x=0;x<512;x++)
+    for(y=0;y<512;y++)
+    {
+    data[index++]=fgetc(file)/2;
+    data[index++]=fgetc(file)/2;
+    data[index++]=fgetc(file)/2;
+    }
+fclose(file);
+
+glGenTextures(1,&(Resources.grassTexture));
+glBindTexture(GL_TEXTURE_2D,Resources.grassTexture);
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR_MIPMAP_LINEAR);
+glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR);
+gluBuild2DMipmaps(GL_TEXTURE_2D,GL_RGB8,512,512,GL_RGB,GL_BYTE,data);
+
+
+
+file=fopen("rocktexture.data","r");
+index=0;
+    for(x=0;x<512;x++)
+    for(y=0;y<512;y++)
+    {
+    data[index++]=fgetc(file)/2;
+    data[index++]=fgetc(file)/2;
+    data[index++]=fgetc(file)/2;
+    }
+fclose(file);
+
+glGenTextures(1,&(Resources.rockTexture));
+glBindTexture(GL_TEXTURE_2D,Resources.rockTexture);
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR_MIPMAP_LINEAR);
+glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR);
+gluBuild2DMipmaps(GL_TEXTURE_2D,GL_RGB8,512,512,GL_RGB,GL_BYTE,data);
+free(data);
+
 }
+
 
 void InitBuffers()
 {
@@ -130,7 +173,7 @@ void InitialiseTerrainSystem()
 {
 printf("Initialising terrain system\n");
 CreateTerrainShader();
-CreateWaterShader();
+CreateTerrainTextures();
 InitBuffers();
 }
 
@@ -145,30 +188,33 @@ Terrain CreateTerrain(const char* filename)
 {
 Terrain terrain;
 
+FILE* file=fopen(filename,"r");
 
-
-terrain.width=255;//width;
-terrain.height=255;//height;
+fread(&terrain.width,sizeof(int),1,file);
+fread(&terrain.height,sizeof(int),1,file);
 
 //Generate heightmap
 int xpoints=terrain.width+1;
-int ypoints=terrain.width+1;
+int ypoints=terrain.height+1;
 
 
-terrain.heightMap=malloc(xpoints*sizeof(TerrainPoint*));
+//terrain.heightMap=malloc(xpoints*sizeof(TerrainPoint*));
 GLfloat* texData=malloc(xpoints*ypoints*sizeof(GLfloat)*4);
 
-FILE* file=fopen(filename,"r");
+
 int i,j,index=0;
     for(i=0;i<xpoints;i++)
     {
-    terrain.heightMap[i]=malloc(ypoints*sizeof(TerrainPoint));
+    //terrain.heightMap[i]=malloc(ypoints*sizeof(TerrainPoint));
         for(j=0;j<ypoints;j++)
         {
-        texData[index*4]=fgetc(file)*10.0;//(SimplexNoise(i/32.0,j/32.0,1)*800+SimplexNoise(i/16.0,j/16.0,1)*400+SimplexNoise(i/8.0,j/8.0,1)*200+SimplexNoise(i/4.0,j/4.0,2)*100+SimplexNoise(i/2.0,j/2.0,3)*50+SimplexNoise(i,j,3)*25);
-        texData[1+index*4]=200.0;
-        terrain.heightMap[i][j].height=(int)texData[index];
-        terrain.heightMap[i][j].roughness=i*10+j*10;
+        fread(texData+index,sizeof(float),1,file);
+        index++;
+        fread(texData+index,sizeof(float),1,file);
+        index++;
+        fread(texData+index,sizeof(float),1,file);
+        index++;
+        fread(texData+index,sizeof(float),1,file);
         index++;
         }
     }
@@ -198,21 +244,15 @@ void FreeTerrain(Terrain* terrain)
 void RenderPatch(float scale,Vector displacement,Matrix modelViewProjection)
 {
 glUniformMatrix4fv(Resources.MVPLocation,1,GL_FALSE,&(modelViewProjection.Data));
-
+glUniform1i(Resources.rockLocation,3);
+glUniform1i(Resources.grassLocation,2);
+glUniform1i(Resources.noiseLocation,1);
 glUniform1i(Resources.heightmapLocation,0);
 glUniform1fv(Resources.scaleLocation,1,&scale);
 glUniform2fv(Resources.displacementLocation,1,&displacement);
 glDrawElements(GL_TRIANGLE_STRIP,NUM_INDICES,GL_UNSIGNED_SHORT,0);
 }
 
-void RenderWaterPatch(float scale,Vector displacement,Matrix modelViewProjection)
-{
-glUniformMatrix4fv(Resources.waterMVPLocation,1,GL_FALSE,&(modelViewProjection.Data));
-glUniform1i(Resources.waterHeightmapLocation,0);
-glUniform1fv(Resources.waterScaleLocation,1,&scale);
-glUniform2fv(Resources.waterDisplacementLocation,1,&displacement);
-glDrawElements(GL_TRIANGLE_STRIP,NUM_INDICES,GL_UNSIGNED_SHORT,0);
-}
 
 void EpicRecursiveRenderTime(int scale,Vector displacement,Vector cameraPosition,Vector cameraDirection,Matrix modelViewProjection)
 {
@@ -230,7 +270,7 @@ cameraToCentre=VectorMultiply(cameraToCentre,1/distance);//Normalize
 distance-=scale*(128*1.414);//We want the distance to the *edge* of the patch
 //Remove those areas behind the viewer
  //   if(VectorDotProduct(cameraToCentre,cameraDirection)<-0.5&&distance>0)return;
-    if(distance<scale*150&&scale>4)
+    if(distance<scale*150&&scale>1)
     {
     scale/=2;
     Vector translation;
@@ -249,8 +289,6 @@ distance-=scale*(128*1.414);//We want the distance to the *edge* of the patch
 
 glUseProgram(Resources.Shader);
 RenderPatch(scale,displacement,modelViewProjection);
-//glUseProgram(Resources.WaterShader);
-//RenderPatch(scale,displacement,modelViewProjection);
 }
 
 
@@ -266,6 +304,12 @@ glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,Resources.IBO);
 
 glActiveTexture(GL_TEXTURE0);
 glBindTexture(GL_TEXTURE_2D,terrain->heightMapTex);
+glActiveTexture(GL_TEXTURE1);
+glBindTexture(GL_TEXTURE_2D,Resources.noiseTexture);
+glActiveTexture(GL_TEXTURE2);
+glBindTexture(GL_TEXTURE_2D,Resources.grassTexture);
+glActiveTexture(GL_TEXTURE3);
+glBindTexture(GL_TEXTURE_2D,Resources.rockTexture);
 
 
 Vector cameraDirection;
@@ -280,10 +324,7 @@ displacement.X=0;
 displacement.Y=0;
 displacement.Z=0;
 
-EpicRecursiveRenderTime(128,displacement,camera->Position,cameraDirection,modelViewProjection);
-
-
-EpicRecursiveRenderTime(128,displacement,camera->Position,cameraDirection,modelViewProjection);
+EpicRecursiveRenderTime(64,displacement,camera->Position,cameraDirection,modelViewProjection);
 
 glDisableClientState(GL_VERTEX_ARRAY);
 }
