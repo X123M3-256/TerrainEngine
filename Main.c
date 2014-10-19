@@ -59,11 +59,8 @@ InitialiseTerrainSystem();
 camera=CreateCamera();
 YawCamera(&camera,2);
 
-<<<<<<< HEAD
-testterrain=CreateTerrain("mountains.data");
-=======
-testterrain=CreateTerrain("testheightmap.png");
->>>>>>> 5e6720bb403a722512a7f149f2298ed10498eeba
+testterrain=CreateTerrain("island.trn");
+
 
 return true;
 }
@@ -111,10 +108,12 @@ break;
 }
 }
 
+Vector velocity;
+
 void RunPhysics()
 {
 UpdateTimer();
-printf("FPS: %f\n",1/deltaT);
+//printf("FPS: %f\n",1/deltaT);
 
 //Do camera movement
 YawCamera(&camera,(mousex-0.5)*2*deltaT);
@@ -122,20 +121,25 @@ PitchCamera(&camera,(mousey-0.5)*2*deltaT);
 
     if(click)
     {
-    Vector forward;
-    forward.X=0;
-    forward.Y=0;
-    forward.Z=-5500*deltaT;
-    TranslateCamera(&camera,forward);
+    velocity.X=0;
+    velocity.Y=0;
+    velocity.Z=toggle?-1:-550;
     }
     else if(rightclick)
     {
-    Vector backward;
-    backward.X=0;
-    backward.Y=0;
-    backward.Z=5500*deltaT;
-    TranslateCamera(&camera,backward);
+    velocity.X=0;
+    velocity.Y=0;
+    velocity.Z=toggle?1:550;
     }
+    else
+    {
+    velocity.X=0;
+    velocity.Y=0;
+    velocity.Z=0;
+    }
+
+Vector translation=VectorMultiply(velocity,deltaT);
+TranslateCamera(&camera,translation);
 }
 
 
@@ -158,8 +162,6 @@ SDL_Quit();
 
 int main(int argc,char* argv[])
 {
-FILE* generator=popen("../TerrainGenerator/bin/Debug/TerrainGenerator","r");
-    if(generator==NULL)exit(1);
 Init();
 camera.Position.Y=5000;
 while(running)
@@ -168,25 +170,10 @@ ProcessEvents();
 RunPhysics();
 RenderScreen();
 
-
-//int i;
-float data[256*256*4];
-float buffer[256*256*2];
-fread(buffer,sizeof(float),256*256*2,generator);
-int i;
-    for(i=0;i<256*256*2;i+=2)
-    {
-    data[i*2]=buffer[i];
-    data[1+i*2]=buffer[i+1];
-    }
-glBindTexture(GL_TEXTURE_2D,testterrain.heightMapTex);
-glTexSubImage2D(GL_TEXTURE_2D,0,0,0,256,256,GL_RGBA,GL_FLOAT,data);
 }
 Quit();
-//pclose(generator);
 return 0;
 }
-
 
 
 /*
