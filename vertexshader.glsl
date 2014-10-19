@@ -4,8 +4,8 @@ uniform float scale;
 uniform vec2 displacement;
 uniform sampler2D heightmap;
 
-varying float lambert;
-varying float water;
+varying vec3 normal;
+varying vec3 position;
 
 const uint gradients[8]=uint[8](0xEu,0x4u,0xCu,0x8u,0xDu,0x5u,0xFu,0xAu);
 const float skewFactor=0.366025404;//0.5*(sqrt(3.0)-1.0)
@@ -115,32 +115,30 @@ vec2 gradient=vec2(0.0,0.0);
 //Linear filtering may not work so we implement it here
 ivec2 coords=ivec2(worldSpacePosition.xz/128.0);
 
-float point00=texelFetch(heightmap,coords,0).r;
-float point01=texelFetch(heightmap,coords+ivec2(0,1),0).r;
-float point10=texelFetch(heightmap,coords+ivec2(1,0),0).r;
-float point11=texelFetch(heightmap,coords+ivec2(1,1),0).r;
-float point0=mix(point00,point01,fract(worldSpacePosition.z/128.0));
-float point1=mix(point10,point11,fract(worldSpacePosition.z/128.0));
-float point=mix(point0,point1,fract(worldSpacePosition.x/128.0));
+vec4 point00=texelFetch(heightmap,coords,0);
+vec4 point01=texelFetch(heightmap,coords+ivec2(0,1),0);
+vec4 point10=texelFetch(heightmap,coords+ivec2(1,0),0);
+vec4 point11=texelFetch(heightmap,coords+ivec2(1,1),0);
+vec4 point0=mix(point00,point01,fract(worldSpacePosition.z/128.0));
+vec4 point1=mix(point10,point11,fract(worldSpacePosition.z/128.0));
+vec4 point=mix(point0,point1,fract(worldSpacePosition.x/128.0));
 //Compute gradient
-gradient.x=mix(point11-point10,point01-point00,fract(worldSpacePosition.x/256))/128.0;
-gradient.y=mix(point11-point01,point10-point00,fract(worldSpacePosition.z/256))/128.0;
+gradient.x=mix(point11.r-point10.r,point01.r-point00.r,fract(worldSpacePosition.x/256))/128.0;
+gradient.y=mix(point11.r-point01.r,point10.r-point00.r,fract(worldSpacePosition.z/256))/128.0;
 
 
-displacedPosition.y+=point+texelFetch(heightmap,coords,0).g;
-water=texelFetch(heightmap,coords,0).g/10.0;
+displacedPosition.y+=point.r+point.a;
 
 
-float roughness=0.3;
-displacedPosition.y+=SimplexNoise(worldSpacePosition.xz,256.0,roughness*64.0,gradient);
-displacedPosition.y+=SimplexNoise(worldSpacePosition.xz,64.0,roughness*16.0,gradient);
-displacedPosition.y+=SimplexNoise(worldSpacePosition.xz,16.0,roughness*4.0,gradient);
+float roughness=clamp(point.a/2.0,0.0,1.0);
+displacedPosition.y+=SimplexNoise(worldSpacePosition.xz,64.0,roughness*8.0,gradient);
+displacedPosition.y+=SimplexNoise(worldSpacePosition.xz,32.0,roughness*4.0,gradient);
+displacedPosition.y+=SimplexNoise(worldSpacePosition.xz,16.0,roughness*2.0,gradient);
+displacedPosition.y+=SimplexNoise(worldSpacePosition.xz,8.0,roughness*1.0,gradient);
 
+normal=normalize(vec3(-gradient.x,1.0,-gradient.y));
+position=displacedPosition.xyz;
 
-
-vec3 normal=normalize(vec3(-gradient.x,1.0,-gradient.y));
-
-lambert=clamp(dot(normal,vec3(0.0,0.866,0.5)),0.0,1.0);
 
 gl_Position=modelViewProjection*displacedPosition;
 }
