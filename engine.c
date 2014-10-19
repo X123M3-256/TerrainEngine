@@ -6,7 +6,7 @@
 //*********************************************************************************************
 
 
-char* ReadFile(char* filename)
+char* ReadFileString(char* filename)
 {
 FILE* file;
 file=fopen(filename,"rb");
